@@ -63,10 +63,9 @@ app.layout = render
 
 
 # Это пример коллбека, выполняется по таймеру и обновляет страницу без ее перезагрузки (декораток творит магию)
-@app.callback(Output('history', 'children'),
-              [Input('main-tick', 'n_intervals')])
-def update_data(n):
-    return []
+@app.callback(Output('history-graph', 'figure'),
+              [Input('main-tick', 'n_intervals'), Input('select-hardware', 'value')])
+def get_history(tick, hardware):
     # Создаем запимь в для базы данных
     new = models.History(value=rnd.random(), hardware=rnd.choice(db.session.query(models.Hardware).all()))
     # Регистрируем запись в базе (это какбы insert, но без его выполнения)
@@ -76,17 +75,6 @@ def update_data(n):
     # Внимание: читать из базы пока изменения не будут применены нельзя (либо commit либо flush0
     # открытую сессию к базе закрывать не надо, флас это делает сам (и открывает сам)
     # доступ к базе потоко безопасен
-    db.session.commit()
-    return [
-        html.Div([html.Span('%s:' % hardware.name), html.Div([html.H2(record.value) for record in hardware.history])])
-    for hardware in db.session.query(models.Hardware).all()]
-
-
-@app.callback(Output('history-graph', 'figure'),
-              [Input('main-tick', 'n_intervals'), Input('select-hardware', 'value')])
-def get_history(tick, hardware):
-    new = models.History(value=rnd.random(), hardware=rnd.choice(db.session.query(models.Hardware).all()))
-    db.session.add(new)
     db.session.commit()
     return {
 
