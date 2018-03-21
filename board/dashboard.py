@@ -7,6 +7,7 @@ import dash_html_components as html
 import random
 
 from . import page
+from board.bootstrap_dash import *
 
 rnd = random.Random()
 
@@ -15,7 +16,7 @@ rnd = random.Random()
 
 # Append an externally hosted CSS stylesheet
 app.css.append_css({
-    "external_url": '/static/css/base.css'})
+    "external_url": ['/static/css/bootstrap.css', '/static/css/bootstrap-theme.css']})
 
 
 
@@ -38,7 +39,7 @@ def render():
             html.Form(className='col-xs-12 form', children=[
                 html.H3('Счетчик'),
                 dcc.RadioItems(
-                    options=[{'label': hard.name, 'value':hard.id} for hard in db.session.query(models.Hardware).all()],
+                    options=[{'label': hard.name, 'value':hard.id} for hard in db.session.query(models.CountersParametr).all()],
                     value=1,
                     id='select-hardware',
                     className='radio',
@@ -51,23 +52,25 @@ def render():
                 html.H3('Показания'),
                 dcc.Graph(id='history-graph')
             ])
-        ]),
-        html.Div(['History', html.Div(id='history', children=[
-            dcc.Graph(id='chart')
-        ])])
+        ])
     ]))
 
 # Это описание веб страницы
 app.layout = render
 
+callback_init()
+
+# @app.callback(Output('simple-label', 'children'), [Input('main-nav', 'value')])
+# def navbar(value):
+#     return Label(value)
 
 
 # Это пример коллбека, выполняется по таймеру и обновляет страницу без ее перезагрузки (декораток творит магию)
 @app.callback(Output('history-graph', 'figure'),
               [Input('main-tick', 'n_intervals'), Input('select-hardware', 'value')])
-def get_history(tick, hardware):
+def get_history(tick, param):
     # Создаем запимь в для базы данных
-    new = models.History(value=rnd.random(), hardware=rnd.choice(db.session.query(models.Hardware).all()))
+    new = models.History(value=rnd.random(), counters_parametr=rnd.choice(db.session.query(models.CountersParametr).all()))
     # Регистрируем запись в базе (это какбы insert, но без его выполнения)
     db.session.add(new)
     # Применяем все изменения в базе (инсерты и апдейты) и все это еще комитится
@@ -80,7 +83,7 @@ def get_history(tick, hardware):
 
         'data': [
             {
-                'y': [record.value for record in db.session.query(models.History).filter_by(hardware_id=hardware).order_by(models.History.id.desc()).limit(20).all()],
+                'y': [record.value for record in db.session.query(models.History).filter_by(id_counters_parametrs=param).order_by(models.History.id_history.desc()).limit(20).all()],
                 # 'marker': {
                 #     'color': 'rgb(55, 83, 109)'
                 # },
